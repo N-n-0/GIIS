@@ -20,7 +20,7 @@ class GraphicsEditor:
 
         self.root.bind("<Configure>", self.resize_canvas)
 
-        self.methods = ["форма Эрмита", "форма Безье", "B-сплайн"]
+        self.methods = ["форма Эрмита", "форма Безье", "B-сплайн (от 2 точек)", "B-сплайн (от 4 точек)"]
         self.selected_method = StringVar()
         self.header = ttk.Label(text="Выберите метод")
         self.header.pack(anchor=NW)
@@ -94,7 +94,9 @@ class GraphicsEditor:
         elif self.selected_method.get() == self.methods[1]:
             self.generate_bezier()
         elif self.selected_method.get() == self.methods[2]:
-            self.generate_b_splain()
+            self.generate_b_splain(temp=0)
+        elif self.selected_method.get() == self.methods[3]:
+            self.generate_b_splain(temp=2)
         else:
             self.label = ttk.Label(text="Алгоритм не выбран")
             self.label.pack(anchor=SW)
@@ -137,14 +139,14 @@ class GraphicsEditor:
                 self.canvas.create_oval(x - 3, y - 3, x + 3, y + 3, fill='red')
 
         size = (len(self.points) - 1) // 3
-        if len(self.points) >= 4:# and (len(self.points) - 1) % 3 == 0:
+        if len(self.points) >= 4:
             for i in range(0, size):
                 p0 = self.points[3*i]
                 p1 = self.points[3*i + 1]
                 p2 = self.points[3*i + 2]
                 p3 = self.points[3*i + 3]
 
-                iterations = 100  # Количество итераций дискретизации
+                iterations = 100
 
                 for j in range(iterations + 1):
                     t = j / iterations
@@ -160,44 +162,45 @@ class GraphicsEditor:
                         self.canvas.create_line(prev_x, prev_y, x, y, fill='blue')
                         prev_x, prev_y = x, y
 
-    def generate_b_splain(self):
+    def generate_b_splain(self, temp):
         for point in self.points:
             x, y = point
             self.canvas.create_oval(x - 3, y - 3, x + 3, y + 3, fill='red')
 
-        if len(self.points) > 3:
-
-            for i in range(1, len(self.points)-2):
-                '''if i+1 > len(self.points):
+        for i in range(1, len(self.points)-temp):
+            if temp == 0:
+                if i+1 > len(self.points)-1:
                     k = 0
                     p = 1
-                elif i+2 > len(self.points):
+                elif i+2 > len(self.points)-1:
                     k = len(self.points) - 1
                     p = 0
-                else:'''
-                k = i+1
-                p = i+2
+                else:
+                    k = i+1
+                    p = i+2
+            else:
+                k = i + 1
+                p = i + 2
+            a0 = (self.points[i-1][0] + 4*self.points[i][0] + self.points[k][0])/6
+            a1 = (-self.points[i-1][0] + self.points[k][0])/2
+            a2 = (self.points[i-1][0] - 2*self.points[i][0] + self.points[k][0])/2
+            a3 = (-self.points[i-1][0] + 3*self.points[i][0] - 3*self.points[k][0] + self.points[p][0])/6
+            b0 = (self.points[i-1][1] + 4 * self.points[i][1] + self.points[k][1]) / 6
+            b1 = (-self.points[i-1][1] + self.points[k][1]) / 2
+            b2 = (self.points[i-1][1] - 2 * self.points[i][1] + self.points[k][1]) / 2
+            b3 = (-self.points[i-1][1] + 3 * self.points[i][1] - 3 * self.points[k][1] + self.points[p][1]) / 6
 
-                a0 = (self.points[i-1][0] + 4*self.points[i][0] + self.points[k][0])/6
-                a1 = (-self.points[i-1][0] + self.points[k][0])/2
-                a2 = (self.points[i-1][0] - 2*self.points[i][0] + self.points[k][0])/2
-                a3 = (-self.points[i-1][0] + 3*self.points[i][0] - 3*self.points[k][0] + self.points[p][0])/6
-                b0 = (self.points[i-1][1] + 4 * self.points[i][1] + self.points[k][1]) / 6
-                b1 = (-self.points[i-1][1] + self.points[k][1]) / 2
-                b2 = (self.points[i-1][1] - 2 * self.points[i][1] + self.points[k][1]) / 2
-                b3 = (-self.points[i-1][1] + 3 * self.points[i][1] - 3 * self.points[k][1] + self.points[p][1]) / 6
+            for t in range(0, 101):
+                t /= 100.0
 
-                for t in range(0, 101):
-                    t /= 100.0
+                x = ((a3*t + a2)*t +a1)*t +a0
+                y = ((b3*t + b2)*t +b1)*t +b0
 
-                    x = ((a3*t + a2)*t +a1)*t +a0
-                    y = ((b3*t + b2)*t +b1)*t +b0
-
-                    if t == 0:
-                        prev_x, prev_y = x, y
-                    else:
-                        self.canvas.create_line(prev_x, prev_y, x, y, fill='blue')
-                        prev_x, prev_y = x, y
+                if t == 0:
+                    prev_x, prev_y = x, y
+                else:
+                    self.canvas.create_line(prev_x, prev_y, x, y, fill='blue')
+                    prev_x, prev_y = x, y
 
 if __name__ == '__main__':
     root = Tk()
